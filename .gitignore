@@ -1,0 +1,16 @@
+# Environment
+.env
+backend/.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# SQLite DB
+nistula.db
+backend/nistula.db
+
+# OS
+.DS_Store
