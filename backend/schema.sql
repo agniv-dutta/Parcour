@@ -1,4 +1,4 @@
--- SQLite schema for Nistula Message Handler (moved into backend)
+-- SQLite schema for Parcour Message Handler (moved into backend)
 
 CREATE TABLE IF NOT EXISTS guest_profiles (
   id TEXT PRIMARY KEY,

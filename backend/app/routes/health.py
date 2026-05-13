@@ -20,4 +20,26 @@ async def health() -> dict:
     except Exception:
         db_connected = False
 
-    return {"status": "ok", "model": settings.MODEL_NAME, "db": "connected" if db_connected else "disconnected"}
+    # count messages if DB is connected
+    message_count = 0
+    try:
+        if db_connected:
+            # use a quick sync-ish path via engine.connect
+            async def _count():
+                async with engine.connect() as conn:
+                    res = await conn.execute("select count(*) from messages")
+                    return int(res.scalar() or 0)
+
+            import asyncio
+
+            message_count = asyncio.get_event_loop().run_until_complete(_count())
+    except Exception:
+        message_count = 0
+
+    return {
+        "status": "ok",
+        "model": settings.MODEL_NAME,
+        "db": "connected" if db_connected else "disconnected",
+        "message_count": message_count,
+        "env": settings.APP_ENV,
+    }

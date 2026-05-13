@@ -30,8 +30,11 @@ class ClaudeClient:
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None) -> None:
         self.api_key = api_key or settings.ANTHROPIC_API_KEY
         self.model = model or settings.MODEL_NAME
+        self.client = None
         if not _HAS_ANTHROPIC:
             logger.warning("anthropic SDK not installed; ClaudeClient will fail at runtime")
+        elif not self.api_key:
+            logger.warning("ANTHROPIC_API_KEY is not configured; ClaudeClient will remain disabled")
         else:
             try:
                 # Prefer a Client class if present
@@ -58,6 +61,8 @@ class ClaudeClient:
 
         if not _HAS_ANTHROPIC:
             raise ClaudeAPIError("anthropic SDK is not installed")
+        if not self.client:
+            raise ClaudeAPIError("ANTHROPIC_API_KEY is not configured")
 
         try:
             # Use the SDK's completions interface; adapt to available surface.
@@ -90,6 +95,8 @@ class ClaudeClient:
 
         if not _HAS_ANTHROPIC:
             raise ClaudeAPIError("anthropic SDK is not installed")
+        if not self.client:
+            raise ClaudeAPIError("ANTHROPIC_API_KEY is not configured")
 
         try:
             if hasattr(self.client, "completions"):
@@ -114,7 +121,7 @@ Bedrooms: 3 | Max guests: 6 | Private pool: Yes
 Check-in: 2pm | Check-out: 11am
 Base rate: INR 18,000 per night (up to 4 guests)
 Extra guest: INR 2,000 per night per person
-WiFi password: Nistula@2024
+    WiFi password: Parcour@2024
 Caretaker: Available 8am to 10pm
 Chef on call: Yes, pre-booking required
 Availability April 20-24: Available
@@ -122,7 +129,7 @@ Cancellation: Free up to 7 days before check-in
 """
 
         SYSTEM_PROMPT = (
-            "You are a warm, professional guest relations assistant for Nistula, a luxury villa rental company in Goa.\n\n"
+            "You are a warm, professional guest relations assistant for Parcour, a luxury villa rental company in Goa.\n\n"
             "Your job is to draft replies to guest messages. Follow these rules exactly:\n"
             "1. Address the guest by their first name\n"
             "2. Be warm but concise — never more than 4 short paragraphs\n"

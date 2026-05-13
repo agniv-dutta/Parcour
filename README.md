@@ -1,9 +1,9 @@
-Nistula Message Handler
+Parcour Message Handler
 =======================
 
 Project Overview
 ----------------
-Nistula Message Handler is a FastAPI-based backend that ingests guest messages from multiple channels, classifies intent, drafts AI replies using Anthropic Claude, scores confidence, and persists the conversation data in a SQLite database. It is designed for production-ready patterns while remaining lightweight and easy to run locally.
+Parcour Message Handler is a FastAPI-based backend that ingests guest messages from multiple channels, classifies intent, drafts AI replies using Anthropic Claude, scores confidence, and persists the conversation data in a SQLite database. It is designed for production-ready patterns while remaining lightweight and easy to run locally.
 
 Tech Stack
 ----------
@@ -21,12 +21,24 @@ Setup Instructions
 git clone <repo> && cd Parcour
 ```
 
-2. Create and activate a virtual environment (POSIX shown):
+2. Create and activate a virtual environment:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+```
+
+PowerShell on Windows uses a different activation command:
+
+```powershell
+& .\.venv\Scripts\Activate.ps1
+```
+
+If PowerShell blocks script execution, run this once in the current terminal session:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
 3. Copy `.env.example` to `.env` and fill in `ANTHROPIC_API_KEY`.
@@ -43,7 +55,7 @@ ENV | Description
 :--|:--
 `ANTHROPIC_API_KEY` | API key for Anthropic Claude
 `MODEL_NAME` | Claude model name (default: claude-sonnet-4-20250514)
-`DATABASE_URL` | SQLAlchemy DB URL (default sqlite+aiosqlite:///./nistula.db)
+`DATABASE_URL` | SQLAlchemy DB URL (default sqlite+aiosqlite:///./parcour.db)
 `APP_ENV` | Application environment (development/production)
 `LOG_LEVEL` | Logging level
 
@@ -52,7 +64,7 @@ API Reference
 Health
 
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:8000/api/v1/health
 ```
 
 Webhook

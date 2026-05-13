@@ -9,8 +9,8 @@ __pycache__/
 venv/
 
 # SQLite DB
-nistula.db
-backend/nistula.db
+parcour.db
+backend/parcour.db
 
 # OS
 .DS_Store

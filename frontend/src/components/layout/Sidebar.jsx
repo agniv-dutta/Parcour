@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useMessages } from '../../hooks/useMessages';
 import { 
   Inbox, 
   Users, 
@@ -15,9 +16,11 @@ import {
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { data: messages } = useMessages({ limit: 1, offset: 0 });
+  const messageCount = messages?.length ?? 0;
 
   const navItems = [
-    { icon: Inbox, label: 'Messages', path: '/messages', badge: 12 },
+    { icon: Inbox, label: 'Messages', path: '/messages', badge: messageCount },
     { icon: Users, label: 'Guests', path: '/guests' },
     { icon: Building2, label: 'Properties', path: '/properties' },
     { icon: BarChart3, label: 'Analytics', path: '/analytics' },
@@ -65,7 +68,7 @@ const Sidebar = () => {
                 {!isCollapsed && (
                   <span className="font-medium text-sm">{item.label}</span>
                 )}
-                {!isCollapsed && item.badge && (
+                {!isCollapsed && item.badge !== undefined && (
                   <span className="ml-auto bg-warm/10 text-[10px] px-1.5 py-0.5 rounded-full text-warm">
                     {item.badge}
                   </span>

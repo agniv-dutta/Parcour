@@ -1,4 +1,4 @@
-"""FastAPI application entrypoint for Nistula Message Handler."""
+"""FastAPI application entrypoint for Parcour Message Handler."""
 from __future__ import annotations
 
 from fastapi import FastAPI, Request
@@ -13,19 +13,25 @@ from .routes import webhook as webhook_route
 from .routes import messages as messages_route
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-logger = logging.getLogger("nistula")
+logger = logging.getLogger("parcour")
 logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO))
 
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
-    app = FastAPI(title="Nistula Message Handler", version="1.0.0")
+    app = FastAPI(title="Parcour Message Handler", version="1.0.0")
 
-    # CORS - allow all in development
-    app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]) 
+    # CORS - allow the frontend dev server and other trusted origins
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:5173"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        allow_credentials=True,
+    )
 
     # Include routes
-    app.include_router(health_route.router)
+    app.include_router(health_route.router, prefix="/api/v1")
     app.include_router(webhook_route.router, prefix="/api/v1")
     app.include_router(messages_route.router, prefix="/api/v1")
 

@@ -1,4 +1,4 @@
-"""SQLAlchemy ORM models for Nistula Message Handler."""
+"""SQLAlchemy ORM models for Parcour Message Handler."""
 from __future__ import annotations
 
 from typing import List
