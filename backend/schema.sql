@@ -1,4 +1,8 @@
 -- SQLite schema for Parcour Message Handler (moved into backend)
+-- Hardest design decision: keep the core tables normalized instead of
+-- duplicating guest, reservation, and conversation details inside messages.
+-- That tradeoff preserves referential integrity and keeps analytics flexible,
+-- while leaving message records focused on the channel event itself.
 
 CREATE TABLE IF NOT EXISTS guest_profiles (
   id TEXT PRIMARY KEY,

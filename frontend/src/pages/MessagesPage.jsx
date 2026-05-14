@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getMessages } from '../api/client';
 import MessageFeed from '../components/messages/MessageFeed';
 import MessageDetail from '../components/messages/MessageDetail';
-import Topbar from '../components/layout/Topbar';
+import Topbar from '../components/layout/TopBar';
 import Sidebar from '../components/layout/Sidebar';
 import TestWebhookPanel from '../components/messages/TestWebhookPanel';
 import { ArrowLeft } from 'lucide-react';

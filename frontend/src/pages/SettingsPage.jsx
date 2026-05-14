@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Settings, Cpu, Globe, Database, Bell, CheckCircle2, XCircle, RefreshCw, Edit3, Save, Zap, AlertTriangle } from 'lucide-react';
 import Sidebar from '../components/layout/Sidebar';
-import Topbar from '../components/layout/Topbar';
+import Topbar from '../components/layout/TopBar';
 import { getHealth, sendToAI } from '../api/client';
 
 const SettingsPage = () => {

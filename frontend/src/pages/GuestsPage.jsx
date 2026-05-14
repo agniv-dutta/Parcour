@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Search, User, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
-import Topbar from '../components/layout/Topbar';
+import Topbar from '../components/layout/TopBar';
 import { MOCK_MESSAGES } from '../data/mockData';
 import { getInitials, getAvatarColor } from '../utils/formatters';
 import ChannelIcon from '../components/shared/ChannelIcon';

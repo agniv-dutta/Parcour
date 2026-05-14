@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, User, MessageCircle, Home, Building2, MapPin } from 'lucide-react';
 import Sidebar from '../components/layout/Sidebar';
-import Topbar from '../components/layout/Topbar';
+import Topbar from '../components/layout/TopBar';
 import { MOCK_MESSAGES } from '../data/mockData';
 import { getInitials, getAvatarColor, timeAgo } from '../utils/formatters';
 import ChannelIcon from '../components/shared/ChannelIcon';

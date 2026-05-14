@@ -1,8 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Home, MapPin, Users, Bath, BedDouble, Waves, DollarSign, Clock } from 'lucide-react';
 import Sidebar from '../components/layout/Sidebar';
-import Topbar from '../components/layout/Topbar';
+import Topbar from '../components/layout/TopBar';
 
 const PROPERTIES = [
   {
@@ -49,7 +50,7 @@ const PROPERTIES = [
   }
 ];
 
-const PropertyCard = ({ property, index }) => (
+const PropertyCard = ({ property, index, onManage }) => (
   <motion.div
     initial={{ opacity: 0, scale: 0.95 }}
     animate={{ opacity: 1, scale: 1 }}
@@ -111,7 +112,11 @@ const PropertyCard = ({ property, index }) => (
           <span className="text-[8px] text-warm-muted uppercase tracking-widest font-bold mb-1">Active Messages</span>
           <span className="text-gold font-playfair text-xl leading-none">{property.activeMessages}</span>
         </div>
-        <button className="bg-gold/10 border border-gold/30 text-gold text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg hover:bg-gold hover:text-navy transition-all">
+        <button
+          type="button"
+          onClick={() => onManage(property)}
+          className="bg-gold/10 border border-gold/30 text-gold text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg hover:bg-gold hover:text-navy transition-all"
+        >
           Manage Property
         </button>
       </div>
@@ -120,6 +125,12 @@ const PropertyCard = ({ property, index }) => (
 );
 
 const PropertiesPage = () => {
+  const navigate = useNavigate();
+
+  const handleManageProperty = (property) => {
+    navigate(`/properties/${property.id}`, { state: { property } });
+  };
+
   return (
     <div className="flex h-screen bg-navy overflow-hidden">
       <Sidebar />
@@ -137,7 +148,7 @@ const PropertiesPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {PROPERTIES.map((prop, idx) => (
-                <PropertyCard key={prop.id} property={prop} index={idx} />
+                <PropertyCard key={prop.id} property={prop} index={idx} onManage={handleManageProperty} />
               ))}
             </div>
           </div>

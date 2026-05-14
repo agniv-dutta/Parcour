@@ -16,7 +16,7 @@ import {
   Info
 } from 'lucide-react';
 import Sidebar from '../components/layout/Sidebar';
-import Topbar from '../components/layout/Topbar';
+import Topbar from '../components/layout/TopBar';
 import axiosInstance from '../api/client';
 
 const StatCard = ({ title, value, trend, sparkline, icon: Icon, delay = 0 }) => (

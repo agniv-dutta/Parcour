@@ -30,13 +30,13 @@ class ClaudeClient:
     """
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None) -> None:
-        self.api_key = api_key or settings.ANTHROPIC_API_KEY
+        self.api_key = api_key or settings.effective_claude_api_key
         self.model = model or settings.MODEL_NAME
         self.client = None
         if not _HAS_ANTHROPIC:
             logger.warning("anthropic SDK not installed; ClaudeClient will fail at runtime")
         elif not self.api_key:
-            logger.warning("ANTHROPIC_API_KEY is not configured; ClaudeClient will remain disabled")
+            logger.warning("CLAUDE_API_KEY is not configured; ClaudeClient will remain disabled")
         else:
             try:
                 # Prefer a Client class if present
@@ -104,7 +104,7 @@ class ClaudeClient:
         if not _HAS_ANTHROPIC:
             raise ClaudeAPIError("anthropic SDK is not installed")
         if not self.client:
-            raise ClaudeAPIError("ANTHROPIC_API_KEY is not configured")
+            raise ClaudeAPIError("CLAUDE_API_KEY is not configured")
 
         # Preferred path for current Anthropic models/SDK.
         if hasattr(self.client, "messages") and hasattr(self.client.messages, "create"):
@@ -118,6 +118,9 @@ class ClaudeClient:
                 )
                 return self._extract_text(response)
             except Exception as exc:
+                err = str(exc).lower()
+                if "invalid x-api-key" in err or "authentication_error" in err:
+                    raise ClaudeAPIError("Anthropic authentication failed: invalid API key")
                 logger.warning("Claude messages.create failed, attempting legacy fallback: %s", exc)
 
         # Legacy fallback for older clients.
@@ -128,7 +131,7 @@ class ClaudeClient:
                     self.client.completions.create,
                     model=self.model,
                     prompt=prompt,
-                    max_tokens=max_tokens,
+                    max_tokens_to_sample=max_tokens,
                 )
                 return self._extract_text(response)
             if hasattr(self.client, "create_completion"):
@@ -136,7 +139,7 @@ class ClaudeClient:
                     self.client.create_completion,
                     model=self.model,
                     prompt=prompt,
-                    max_tokens=max_tokens,
+                    max_tokens_to_sample=max_tokens,
                 )
                 return self._extract_text(response)
             if hasattr(self.client, "create"):
@@ -144,7 +147,7 @@ class ClaudeClient:
                     self.client.create,
                     prompt=prompt,
                     model=self.model,
-                    max_tokens=max_tokens,
+                    max_tokens_to_sample=max_tokens,
                 )
                 return self._extract_text(response)
         except Exception as exc:

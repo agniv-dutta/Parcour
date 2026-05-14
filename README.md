@@ -1,20 +1,25 @@
-Parcour Message Handler
-=======================
+# Parcour Message Handler
 
-Project Overview
-----------------
+Parcour is an AI-powered guest messaging assistant for hospitality teams. It classifies incoming messages, drafts helpful replies with Claude, scores confidence, and keeps the conversation workflow organized in a lightweight FastAPI backend.
+
+![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
+![Anthropic](https://img.shields.io/badge/Claude-Anthropic-111111?style=for-the-badge)
+![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=111111)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+
+## Project Overview
 Parcour Message Handler is a FastAPI-based backend that ingests guest messages from multiple channels, classifies intent, drafts AI replies using Anthropic Claude, scores confidence, and persists the conversation data in a SQLite database. It is designed for production-ready patterns while remaining lightweight and easy to run locally.
 
-Tech Stack
-----------
+## Tech Stack
 - Python 3.11+
 - FastAPI + Uvicorn
 - SQLite (aiosqlite + SQLAlchemy async)
 - Anthropic Python SDK (Claude)
 - python-dotenv for environment variables
 
-Setup Instructions
-------------------
+## Setup Instructions
 1. Clone the repo and change directory:
 
 ```bash
@@ -49,8 +54,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 uvicorn backend.app.main:app --reload --port 8000
 ```
 
-Environment Variables
----------------------
+## Environment Variables
 ENV | Description
 :--|:--
 `ANTHROPIC_API_KEY` | API key for Anthropic Claude
@@ -59,8 +63,7 @@ ENV | Description
 `APP_ENV` | Application environment (development/production)
 `LOG_LEVEL` | Logging level
 
-API Reference
--------------
+## API Reference
 Health
 
 ```bash
@@ -89,8 +92,7 @@ Get message
 curl http://localhost:8000/api/v1/messages/<message_id>
 ```
 
-Seed Sample Data
-----------------
+## Seed Sample Data
 To load the four demo messages used in local testing, run:
 
 ```powershell
@@ -100,13 +102,11 @@ python app/seed.py
 
 This seeds Rahul, Priya, Arjun, and Kavya into the SQLite database used by the app.
 
-Notes
------
+## Notes
 - The app now allows `http://localhost:5173` in CORS so the Vite frontend can call the API directly.
 - The health endpoint returns `status`, `model`, `db`, `message_count`, and `env`.
 
-Confidence Scoring Logic
-------------------------
+## Confidence Scoring Logic
 The `calculate_confidence` function follows these rules:
 
 1. Start with the classifier confidence (from rule-based match or Claude fallback).
@@ -120,16 +120,14 @@ Action mapping:
 - 0.60 <= score &lt; 0.85 → `agent_review`
 - score &lt; 0.60 OR complaint → `escalate`
 
-Query Classification
---------------------
+## Query Classification
 Two-stage classifier:
 
 1. Rule-based keyword matching across categories. If keyword-derived confidence &gt;= 0.75, use it.
 2. Otherwise, fallback to Claude with a tightly scoped prompt asking for exactly one category.
 
-Testing
--------
-Three sample curl commands:
+## Testing
+Three curl test examples for the webhook pipeline:
 
 1. Availability query (pre-sales availability):
 
@@ -155,8 +153,7 @@ curl -X POST http://localhost:8000/api/v1/webhook/message \
   -d '{"source":"direct","guest_name":"Luca","message":"Hi, what's the wifi password?","timestamp":"2026-04-03T10:00:00Z","booking_ref":"BR-456","property_id":"villa-b1"}'
 ```
 
-Design Decisions
-----------------
+## Design Decisions
 - SQLite: lightweight, zero-dependency, suitable for single-server deployments and tests.
 - Two-stage classifier: low-latency rule-based first, with Claude fallback for ambiguous messages.
 - Async SQLAlchemy + aiosqlite: keeps the I/O non-blocking in FastAPI.

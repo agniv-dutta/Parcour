@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-import os
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -18,6 +17,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=ENV_FILE)
 
+    CLAUDE_API_KEY: str = Field("")
     ANTHROPIC_API_KEY: str = Field("")
     MODEL_NAME: str = Field("claude-sonnet-4-20250514")
     DATABASE_URL: str = Field("sqlite+aiosqlite:///./parcour.db")
@@ -30,11 +30,22 @@ class Settings(BaseSettings):
         if not isinstance(value, str):
             return value
 
+        if value.startswith("postgres://"):
+            return value.replace("postgres://", "postgresql+asyncpg://", 1)
+
+        if value.startswith("postgresql://"):
+            return value.replace("postgresql://", "postgresql+asyncpg://", 1)
+
         if value.startswith("sqlite+aiosqlite:///./"):
             db_name = value.rsplit("/", 1)[-1]
             return f"sqlite+aiosqlite:///{DEFAULT_DB_PATH}"
 
         return value
+
+    @property
+    def effective_claude_api_key(self) -> str:
+        """Return the configured Claude key, preferring the new env var name."""
+        return self.CLAUDE_API_KEY or self.ANTHROPIC_API_KEY
 
 
 def get_settings() -> Settings:
