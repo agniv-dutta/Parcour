@@ -11,6 +11,7 @@ from .database import engine, Base
 from .routes import health as health_route
 from .routes import webhook as webhook_route
 from .routes import messages as messages_route
+from .routes import analytics as analytics_route
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 logger = logging.getLogger("parcour")
@@ -34,6 +35,7 @@ def create_app() -> FastAPI:
     app.include_router(health_route.router, prefix="/api/v1")
     app.include_router(webhook_route.router, prefix="/api/v1")
     app.include_router(messages_route.router, prefix="/api/v1")
+    app.include_router(analytics_route.router, prefix="/api/v1")
 
     # Request logging middleware
     @app.middleware("http")

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Cpu, Globe, Database, Bell, CheckCircle2, XCircle, RefreshCw, Edit3, Save } from 'lucide-react';
+import { Settings, Cpu, Globe, Database, Bell, CheckCircle2, XCircle, RefreshCw, Edit3, Save, Zap, AlertTriangle } from 'lucide-react';
 import Sidebar from '../components/layout/Sidebar';
 import Topbar from '../components/layout/Topbar';
 import { getHealth, sendToAI } from '../api/client';
@@ -10,6 +10,7 @@ const SettingsPage = () => {
   const [reviewThreshold, setReviewThreshold] = useState(0.60);
   const [apiStatus, setApiStatus] = useState('idle'); // idle, checking, success, error
   const [healthInfo, setHealthInfo] = useState(null);
+  const [lastChecked, setLastChecked] = useState(0);
   const [isEditingContext, setIsEditingContext] = useState(false);
   const [propertyContext, setPropertyContext] = useState(
     "Nistula Luxury Villas: A collection of 3 bespoke properties in North Goa. \nVilla B1 (Assagao): 3BR, private pool. \nVilla B2 (Anjuna): 4BR, infinity pool. \nVilla C2 (Vagator): 2BR, sea view. \nCheck-in: 2pm, Check-out: 11am."
@@ -21,8 +22,20 @@ const SettingsPage = () => {
     digest: false
   });
 
+  // Timer for last checked
+  useEffect(() => {
+    let interval;
+    if (apiStatus === 'success' || apiStatus === 'error') {
+      interval = setInterval(() => {
+        setLastChecked(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [apiStatus]);
+
   const checkConnection = async () => {
     setApiStatus('checking');
+    setLastChecked(0);
     try {
       // 1. Health check
       const health = await getHealth();
@@ -31,7 +44,7 @@ const SettingsPage = () => {
       const testPayload = {
         source: "direct",
         guest_name: "API Test",
-        message_text: "Is the villa available this weekend?",
+        message: "Is the villa available this weekend?",
         timestamp: new Date().toISOString(),
         booking_ref: "TEST-0001",
         property_id: "villa-b1"
@@ -50,6 +63,12 @@ const SettingsPage = () => {
     }
   };
 
+  const getThresholdColor = (val) => {
+    if (val >= 0.85) return '#4CAF82';
+    if (val >= 0.60) return '#E8A838';
+    return '#E05555';
+  };
+
   return (
     <div className="flex h-screen bg-navy overflow-hidden">
       <Sidebar />
@@ -66,55 +85,94 @@ const SettingsPage = () => {
             {/* Section 1: AI Configuration */}
             <section className="bg-navy-surface border border-warm/10 rounded-2xl p-8 shadow-xl">
               <div className="flex items-center gap-3 mb-8">
-                <Cpu className="text-gold" size={24} />
+                <div className="p-2 bg-gold/10 rounded-lg">
+                  <Settings className="text-gold" size={20} />
+                </div>
                 <h3 className="text-warm font-playfair text-xl">AI Configuration</h3>
               </div>
 
-              <div className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold text-warm-muted uppercase tracking-widest">Auto-send Threshold</label>
-                      <span className="text-gold font-bold text-xs">{autoThreshold.toFixed(2)}</span>
+              <div className="space-y-10">
+                {/* Auto-send Threshold */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <label className="text-[10px] font-bold text-warm uppercase tracking-widest">Auto-send Threshold</label>
+                      <p className="text-[10px] text-warm-muted">Replies above this score are sent automatically</p>
                     </div>
+                    <span className="text-gold font-bold text-lg">{autoThreshold.toFixed(2)}</span>
+                  </div>
+                  <div className="relative pt-2">
                     <input 
-                      type="range" min="0" max="1" step="0.05" 
+                      type="range" min="0.5" max="1" step="0.01" 
                       value={autoThreshold}
                       onChange={(e) => setAutoThreshold(parseFloat(e.target.value))}
-                      className="w-full accent-gold bg-navy h-1.5 rounded-full"
+                      className="w-full accent-gold bg-navy h-1.5 rounded-full appearance-none cursor-pointer"
                     />
-                    <p className="text-[9px] text-warm-muted italic">Confidence score required to send reply without human review.</p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <label className="text-[10px] font-bold text-warm-muted uppercase tracking-widest">Agent Review Threshold</label>
-                      <span className="text-gold font-bold text-xs">{reviewThreshold.toFixed(2)}</span>
+                    <div className="flex w-full h-1 mt-2 rounded-full overflow-hidden">
+                      <div className="bg-danger w-[20%]" />
+                      <div className="bg-warning w-[50%]" />
+                      <div className="bg-success w-[30%]" />
                     </div>
-                    <input 
-                      type="range" min="0" max="1" step="0.05" 
-                      value={reviewThreshold}
-                      onChange={(e) => setReviewThreshold(parseFloat(e.target.value))}
-                      className="w-full accent-gold bg-navy h-1.5 rounded-full"
+                    {/* Pointer */}
+                    <div 
+                      className="absolute top-[26px] w-0.5 h-3 bg-white shadow-xl transition-all"
+                      style={{ left: `${((autoThreshold - 0.5) / 0.5) * 100}%` }}
                     />
-                    <p className="text-[9px] text-warm-muted italic">Messages below this score are automatically escalated.</p>
                   </div>
                 </div>
 
-                <div className="p-4 bg-navy/30 rounded-xl border border-warm/5">
-                  <p className="text-[10px] font-bold text-warm-muted uppercase tracking-widest mb-3">Active Mapping</p>
-                  <div className="flex flex-wrap gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-success" />
-                      <span className="text-[9px] text-warm uppercase tracking-widest">Auto-send (&gt;{autoThreshold})</span>
+                {/* Agent Review Threshold */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <label className="text-[10px] font-bold text-warm uppercase tracking-widest">Agent Review Threshold</label>
+                      <p className="text-[10px] text-warm-muted">Replies between this and auto-send go to agent review</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-warning" />
-                      <span className="text-[9px] text-warm uppercase tracking-widest">Review ({reviewThreshold}-{autoThreshold})</span>
+                    <span className="text-gold font-bold text-lg">{reviewThreshold.toFixed(2)}</span>
+                  </div>
+                  <div className="relative pt-2">
+                    <input 
+                      type="range" min="0.5" max="1" step="0.01" 
+                      value={reviewThreshold}
+                      onChange={(e) => setReviewThreshold(parseFloat(e.target.value))}
+                      className="w-full accent-gold bg-navy h-1.5 rounded-full appearance-none cursor-pointer"
+                    />
+                    <div className="flex w-full h-1 mt-2 rounded-full overflow-hidden">
+                      <div className="bg-danger w-[20%]" />
+                      <div className="bg-warning w-[50%]" />
+                      <div className="bg-success w-[30%]" />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-danger" />
-                      <span className="text-[9px] text-warm uppercase tracking-widest">Escalate (&lt;{reviewThreshold})</span>
+                    <div 
+                      className="absolute top-[26px] w-0.5 h-3 bg-white shadow-xl transition-all"
+                      style={{ left: `${((reviewThreshold - 0.5) / 0.5) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Live Mapping Preview */}
+                <div className="p-6 bg-navy/30 rounded-xl border border-warm/5">
+                  <p className="text-[10px] font-bold text-warm-muted uppercase tracking-widest mb-4">Live Action Mapping Preview</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                      <div className="text-[10px]">
+                        <p className="text-warm font-bold">Score &gt; {autoThreshold.toFixed(2)}</p>
+                        <p className="text-success uppercase tracking-tighter font-bold">● AUTO-SEND</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-warning" />
+                      <div className="text-[10px]">
+                        <p className="text-warm font-bold">{reviewThreshold.toFixed(2)} – {autoThreshold.toFixed(2)}</p>
+                        <p className="text-warning uppercase tracking-tighter font-bold">● AGENT REVIEW</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-danger" />
+                      <div className="text-[10px]">
+                        <p className="text-warm font-bold">Score &lt; {reviewThreshold.toFixed(2)}</p>
+                        <p className="text-danger uppercase tracking-tighter font-bold">● ESCALATE</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -125,53 +183,85 @@ const SettingsPage = () => {
             <section className="bg-navy-surface border border-warm/10 rounded-2xl p-8 shadow-xl">
               <div className="flex justify-between items-center mb-8">
                 <div className="flex items-center gap-3">
-                  <Globe className="text-gold" size={24} />
+                  <div className="p-2 bg-gold/10 rounded-lg">
+                    <Zap className="text-gold" size={20} />
+                  </div>
                   <h3 className="text-warm font-playfair text-xl">API Status</h3>
                 </div>
-                <button 
-                  onClick={checkConnection}
-                  disabled={apiStatus === 'checking'}
-                  className="flex items-center gap-2 bg-gold/10 border border-gold/30 text-gold text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg hover:bg-gold hover:text-navy transition-all"
-                >
-                  {apiStatus === 'checking' ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                  Check Connection
-                </button>
+                <div className="text-right">
+                  <button 
+                    onClick={checkConnection}
+                    disabled={apiStatus === 'checking'}
+                    className="flex items-center gap-2 bg-gold/10 border border-gold/30 text-gold text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 rounded-lg hover:bg-gold hover:text-navy transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {apiStatus === 'checking' ? <RefreshCw size={14} className="animate-spin" /> : <Zap size={14} />}
+                    Check API Connection
+                  </button>
+                  {apiStatus !== 'idle' && (
+                    <p className="text-[9px] text-warm-muted mt-2 uppercase tracking-widest">
+                      Last checked: {lastChecked} seconds ago
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-4">
                 {apiStatus === 'idle' && (
-                  <p className="text-[10px] text-warm-muted uppercase tracking-widest text-center py-4 border border-dashed border-warm/10 rounded-xl">
-                    Run diagnostics to verify system health
-                  </p>
+                  <div className="py-8 flex flex-col items-center justify-center border border-dashed border-warm/10 rounded-xl opacity-40">
+                    <Globe size={32} className="mb-2" />
+                    <p className="text-[10px] font-bold uppercase tracking-widest">Run diagnostics to verify system health</p>
+                  </div>
                 )}
 
                 {apiStatus === 'success' && healthInfo && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-success/5 border border-success/20 rounded-xl p-4 flex items-start gap-3">
-                      <CheckCircle2 className="text-success flex-shrink-0" size={18} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-success/5 border border-success/20 rounded-xl p-4 flex items-center gap-3">
+                      <CheckCircle2 className="text-success" size={18} />
                       <div>
-                        <p className="text-[10px] font-bold text-success uppercase tracking-widest mb-1">Backend Online</p>
-                        <p className="text-[9px] text-warm-muted">FastAPI responding | DB: connected</p>
+                        <p className="text-[10px] font-bold text-success uppercase tracking-widest">Backend Connected</p>
+                        <p className="text-[9px] text-warm-muted">FastAPI v{healthInfo.health.version || '1.0'}</p>
                       </div>
                     </div>
-                    <div className="bg-success/5 border border-success/20 rounded-xl p-4 flex items-start gap-3">
-                      <CheckCircle2 className="text-success flex-shrink-0" size={18} />
+                    <div className="bg-success/5 border border-success/20 rounded-xl p-4 flex items-center gap-3">
+                      <CheckCircle2 className="text-success" size={18} />
                       <div>
-                        <p className="text-[10px] font-bold text-success uppercase tracking-widest mb-1">Claude API Responding</p>
-                        <p className="text-[9px] text-warm-muted">Model: {healthInfo.health.model || 'claude-sonnet-4'} | Confidence: {(healthInfo.aiResponse.confidence_score * 100).toFixed(0)}%</p>
+                        <p className="text-[10px] font-bold text-success uppercase tracking-widest">Claude API Active</p>
+                        <p className="text-[9px] text-warm-muted">Model: {healthInfo.health.model || 'claude-3-sonnet'}</p>
                       </div>
                     </div>
-                  </motion.div>
+                    <div className="bg-success/5 border border-success/20 rounded-xl p-4 flex items-center gap-3">
+                      <CheckCircle2 className="text-success" size={18} />
+                      <div>
+                        <p className="text-[10px] font-bold text-success uppercase tracking-widest">DB Connected</p>
+                        <p className="text-[9px] text-warm-muted">System ready for transactions</p>
+                      </div>
+                    </div>
+                    <div className="bg-success/5 border border-success/20 rounded-xl p-4 flex items-center gap-3">
+                      <CheckCircle2 className="text-success" size={18} />
+                      <div>
+                        <p className="text-[10px] font-bold text-success uppercase tracking-widest">AI Response Valid</p>
+                        <p className="text-[9px] text-warm-muted">Confidence: {healthInfo.aiResponse.confidence_score.toFixed(2)} | {healthInfo.aiResponse.query_type}</p>
+                      </div>
+                    </div>
+                  </div>
                 )}
 
                 {apiStatus === 'error' && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-danger/5 border border-danger/20 rounded-xl p-4 flex items-start gap-3">
-                    <XCircle className="text-danger flex-shrink-0" size={18} />
-                    <div>
-                      <p className="text-[10px] font-bold text-danger uppercase tracking-widest mb-1">Backend Offline</p>
-                      <p className="text-[9px] text-warm-muted">Ensure FastAPI is running on http://localhost:8000</p>
+                  <div className="space-y-3">
+                    <div className="bg-danger/5 border border-danger/20 rounded-xl p-4 flex items-center gap-3">
+                      <XCircle className="text-danger" size={18} />
+                      <div>
+                        <p className="text-[10px] font-bold text-danger uppercase tracking-widest">Backend Offline</p>
+                        <p className="text-[9px] text-warm-muted">Ensure FastAPI is running on http://localhost:8000</p>
+                      </div>
                     </div>
-                  </motion.div>
+                    <div className="p-4 bg-navy/50 rounded-xl border border-warm/10 flex items-start gap-3">
+                      <AlertTriangle className="text-warning flex-shrink-0" size={16} />
+                      <p className="text-[10px] text-warm-muted leading-relaxed">
+                        <span className="text-warm font-bold">Fix:</span> Run <code className="bg-navy px-1.5 py-0.5 rounded text-gold">uvicorn app.main:app --reload</code> in the backend directory.
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
             </section>
@@ -180,7 +270,9 @@ const SettingsPage = () => {
             <section className="bg-navy-surface border border-warm/10 rounded-2xl p-8 shadow-xl">
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-3">
-                  <Database className="text-gold" size={24} />
+                  <div className="p-2 bg-gold/10 rounded-lg">
+                    <Database className="text-gold" size={20} />
+                  </div>
                   <h3 className="text-warm font-playfair text-xl">Property Context</h3>
                 </div>
                 <button 
@@ -202,7 +294,9 @@ const SettingsPage = () => {
             {/* Section 4: Notifications */}
             <section className="bg-navy-surface border border-warm/10 rounded-2xl p-8 shadow-xl">
               <div className="flex items-center gap-3 mb-8">
-                <Bell className="text-gold" size={24} />
+                <div className="p-2 bg-gold/10 rounded-lg">
+                  <Bell className="text-gold" size={20} />
+                </div>
                 <h3 className="text-warm font-playfair text-xl">Notification Preferences</h3>
               </div>
 

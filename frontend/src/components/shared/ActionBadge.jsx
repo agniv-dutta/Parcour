@@ -6,13 +6,13 @@ const ActionBadge = ({ action, className = "" }) => {
   const getActionConfig = (action) => {
     switch (action) {
       case 'auto_send':
-        return { label: 'AUTO-SENT', color: '#4CAF82', pulse: true };
+        return { label: 'AUTO-SENT', color: '#4CAF82', pulse: true, fast: false };
       case 'agent_review':
-        return { label: 'NEEDS REVIEW', color: '#E8A838', pulse: true };
+        return { label: 'NEEDS REVIEW', color: '#E8A838', pulse: true, fast: false };
       case 'escalate':
-        return { label: 'ESCALATED', color: '#E05555', pulse: true };
+        return { label: 'ESCALATED', color: '#E05555', pulse: true, fast: true };
       default:
-        return { label: action.replace('_', ' ').toUpperCase(), color: '#8B96A5', pulse: false };
+        return { label: action.replace('_', ' ').toUpperCase(), color: '#8B96A5', pulse: false, fast: false };
     }
   };
 
@@ -33,7 +33,10 @@ const ActionBadge = ({ action, className = "" }) => {
       {config.pulse && (
         <span className="relative flex h-1.5 w-1.5">
           <span 
-            className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+            className={twMerge(
+              "absolute inline-flex h-full w-full rounded-full opacity-75",
+              config.fast ? "animate-pulse-dot-fast" : "animate-pulse-dot"
+            )}
             style={{ backgroundColor: config.color }}
           ></span>
           <span 

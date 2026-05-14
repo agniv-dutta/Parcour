@@ -1,24 +1,53 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { getInitials, getAvatarColor, timeAgo, truncate, getScoreColor } from '../../utils/formatters';
 import ChannelIcon from '../shared/ChannelIcon';
 import QueryTypeBadge from '../shared/QueryTypeBadge';
 import ActionBadge from '../shared/ActionBadge';
 
-const MessageCard = ({ message, active, onClick }) => {
+const MessageCard = ({ message, active, onClick, highlightQuery = "" }) => {
+  const [isRead, setIsRead] = useState(false);
   const avatarColor = getAvatarColor(message.guest_name);
   const scoreColor = getScoreColor(message.confidence_score);
+
+  // Track read state in localStorage
+  useEffect(() => {
+    const readIds = JSON.parse(localStorage.getItem('parcour_read_messages') || '[]');
+    if (readIds.includes(message.id)) {
+      setIsRead(true);
+    }
+  }, [message.id]);
+
+  const handleCardClick = () => {
+    const readIds = JSON.parse(localStorage.getItem('parcour_read_messages') || '[]');
+    if (!readIds.includes(message.id)) {
+      localStorage.setItem('parcour_read_messages', JSON.stringify([...readIds, message.id]));
+      setIsRead(true);
+    }
+    onClick(message);
+  };
+
+  const highlightText = (text, query) => {
+    if (!query || !text) return text;
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return parts.map((part, i) => 
+      part.toLowerCase() === query.toLowerCase() 
+        ? <mark key={i}>{part}</mark> 
+        : part
+    );
+  };
 
   return (
     <motion.div
       layout
-      onClick={() => onClick(message)}
+      onClick={handleCardClick}
       whileHover={{ y: -2 }}
       className={`
-        relative cursor-pointer transition-all duration-200 p-4 rounded-xl border
+        relative cursor-pointer transition-all duration-300 p-4 rounded-xl border
         ${active 
           ? "bg-[#1A2A3A] border-gold shadow-lg shadow-gold/5" 
           : "bg-navy-surface border-warm/10 hover:border-warm/30 hover:bg-[#1C2C3C]"}
+        ${!isRead && !active ? "border-l-[3px] border-l-gold" : ""}
       `}
     >
       {/* Active Indicator */}
@@ -36,9 +65,11 @@ const MessageCard = ({ message, active, onClick }) => {
             {getInitials(message.guest_name)}
           </div>
           <div>
-            <h3 className="text-warm font-playfair text-lg leading-none mb-1">{message.guest_name}</h3>
+            <h3 className={`font-playfair text-lg leading-none mb-1 transition-colors ${active ? 'text-gold' : isRead ? 'text-warm/80' : 'text-warm'}`}>
+              {highlightText(message.guest_name, highlightQuery)}
+            </h3>
             <div className="flex items-center gap-2 text-[10px] text-warm-muted uppercase tracking-wider font-bold">
-              <span>{message.booking_ref}</span>
+              <span>{highlightText(message.booking_ref, highlightQuery)}</span>
               <span>·</span>
               <span>{message.property_id}</span>
               <span>·</span>
@@ -52,8 +83,8 @@ const MessageCard = ({ message, active, onClick }) => {
       </div>
 
       {/* Preview */}
-      <p className="text-sm text-warm/70 mb-4 line-clamp-2 italic leading-relaxed">
-        "{truncate(message.message_text, 120)}"
+      <p className={`text-sm mb-4 line-clamp-2 italic leading-relaxed transition-colors ${active ? 'text-warm' : 'text-warm/60'}`}>
+        "{highlightText(truncate(message.message_text, 120), highlightQuery)}"
       </p>
 
       {/* Footer */}

@@ -114,6 +114,33 @@ class ClaudeClient:
 
         return text.strip()
 
+    async def get_custom_completion(self, system_prompt: str, user_prompt: str, max_tokens: int = 1000) -> str:
+        """Generic method to get a completion from Claude with custom prompts."""
+        if not _HAS_ANTHROPIC:
+            raise ClaudeAPIError("anthropic SDK is not installed")
+        if not self.client:
+            raise ClaudeAPIError("ANTHROPIC_API_KEY is not configured")
+
+        # Combine for older prompt-based completions if needed, 
+        # but modern SDKs support system/messages.
+        prompt = f"{system_prompt}\n\nHuman: {user_prompt}\n\nAssistant:"
+
+        try:
+            if hasattr(self.client, "completions"):
+                resp = await self.client.completions.create(model=self.model, prompt=prompt, max_tokens=max_tokens)
+                text = getattr(resp, "completion", None) or getattr(resp, "text", None) or resp.choices[0].text
+            elif hasattr(self.client, "create_completion"):
+                resp = await self.client.create_completion(model=self.model, prompt=prompt, max_tokens=max_tokens)
+                text = resp.choices[0].text
+            else:
+                resp = self.client.create(prompt=prompt, model=self.model, max_tokens=max_tokens)
+                text = resp.get("completion") or resp.get("text") or resp["choices"][0]["text"]
+        except Exception as exc:
+            logger.exception("Claude completion error: %s", exc)
+            raise ClaudeAPIError(str(exc))
+
+        return text.strip()
+
     def _system_prompt(self) -> str:
         PROPERTY_CONTEXT = """
 Property: Villa B1, Assagao, North Goa
