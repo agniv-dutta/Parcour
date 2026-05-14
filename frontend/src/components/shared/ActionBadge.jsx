@@ -1,23 +1,48 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
-const ActionBadge = ({ action }) => {
-  const actions = {
-    'AUTO-SENT': { color: 'text-success bg-success/10 border-success/20', dot: 'bg-success' },
-    'REVIEW': { color: 'text-warning bg-warning/10 border-warning/20', dot: 'bg-warning' },
-    'ESCALATED': { color: 'text-danger bg-danger/10 border-danger/20', dot: 'bg-danger' },
+const ActionBadge = ({ action, className = "" }) => {
+  const getActionConfig = (action) => {
+    switch (action) {
+      case 'auto_send':
+        return { label: 'AUTO-SENT', color: '#4CAF82', pulse: true };
+      case 'agent_review':
+        return { label: 'NEEDS REVIEW', color: '#E8A838', pulse: true };
+      case 'escalate':
+        return { label: 'ESCALATED', color: '#E05555', pulse: true };
+      default:
+        return { label: action.replace('_', ' ').toUpperCase(), color: '#8B96A5', pulse: false };
+    }
   };
 
-  const config = actions[action] || actions.REVIEW;
+  const config = getActionConfig(action);
 
   return (
-    <div className={`flex items-center gap-2 px-2.5 py-0.5 rounded-sm border text-[10px] font-bold tracking-widest ${config.color}`}>
-      <motion.div 
-        className={`w-1.5 h-1.5 rounded-full ${config.dot}`}
-        animate={{ opacity: [0.4, 1, 0.4] }}
-        transition={{ duration: 2, repeat: Infinity }}
-      />
-      {action}
+    <div 
+      className={twMerge(
+        "inline-flex items-center gap-2 px-2 py-1 rounded-md text-[9px] font-bold tracking-widest border",
+        className
+      )}
+      style={{ 
+        color: config.color, 
+        borderColor: `${config.color}33`,
+        backgroundColor: `${config.color}11`
+      }}
+    >
+      {config.pulse && (
+        <span className="relative flex h-1.5 w-1.5">
+          <span 
+            className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+            style={{ backgroundColor: config.color }}
+          ></span>
+          <span 
+            className="relative inline-flex rounded-full h-1.5 w-1.5"
+            style={{ backgroundColor: config.color }}
+          ></span>
+        </span>
+      )}
+      {config.label}
     </div>
   );
 };

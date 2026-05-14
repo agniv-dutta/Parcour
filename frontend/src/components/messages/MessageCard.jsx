@@ -1,82 +1,83 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { getInitials, getAvatarColor, timeAgo, truncate, getScoreColor } from '../../utils/formatters';
 import ChannelIcon from '../shared/ChannelIcon';
 import QueryTypeBadge from '../shared/QueryTypeBadge';
 import ActionBadge from '../shared/ActionBadge';
-import { formatRelativeTime, truncateText } from '../../utils/formatters';
 
-const MessageCard = ({ message }) => {
-  const navigate = useNavigate();
-  
-  const getConfidenceColor = (score) => {
-    if (score >= 0.85) return 'bg-success';
-    if (score >= 0.6) return 'bg-warning';
-    return 'bg-danger';
-  };
+const MessageCard = ({ message, active, onClick }) => {
+  const avatarColor = getAvatarColor(message.guest_name);
+  const scoreColor = getScoreColor(message.confidence_score);
 
   return (
     <motion.div
+      layout
+      onClick={() => onClick(message)}
       whileHover={{ y: -2 }}
-      onClick={() => navigate(`/messages/${message.id}`)}
-      className="group relative p-6 bg-navy-surface/30 border border-warm/5 rounded-lg hover:border-gold/30 hover:bg-navy-surface/50 transition-all cursor-pointer overflow-hidden"
+      className={`
+        relative cursor-pointer transition-all duration-200 p-4 rounded-xl border
+        ${active 
+          ? "bg-[#1A2A3A] border-gold shadow-lg shadow-gold/5" 
+          : "bg-navy-surface border-warm/10 hover:border-warm/30 hover:bg-[#1C2C3C]"}
+      `}
     >
-      {/* Active Accent */}
-      <div className="absolute left-0 top-0 bottom-0 w-0 group-hover:w-1 bg-gold transition-all duration-300" />
+      {/* Active Indicator */}
+      {active && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-2/3 bg-gold rounded-r-full" />
+      )}
 
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full overflow-hidden border border-warm/10">
-              <img 
-                src={message.guest_avatar || `https://ui-avatars.com/api/?name=${message.guest_name}&background=C9A96E&color=0D1B2A`} 
-                alt={message.guest_name} 
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="absolute -bottom-1 -right-1 bg-navy-surface p-1 rounded-full border border-warm/5">
-              <ChannelIcon channel={message.channel} size={12} />
-            </div>
+      {/* Header */}
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex gap-3">
+          <div 
+            className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-inner"
+            style={{ backgroundColor: avatarColor }}
+          >
+            {getInitials(message.guest_name)}
           </div>
           <div>
-            <div className="flex items-center gap-3 mb-1">
-              <h3 className="text-lg font-playfair font-semibold text-warm leading-tight">
-                {message.guest_name}
-              </h3>
-              <span className="px-2 py-0.5 rounded bg-gold/10 border border-gold/20 text-[10px] text-gold uppercase tracking-widest font-bold">
-                {message.property_id}
-              </span>
+            <h3 className="text-warm font-playfair text-lg leading-none mb-1">{message.guest_name}</h3>
+            <div className="flex items-center gap-2 text-[10px] text-warm-muted uppercase tracking-wider font-bold">
+              <span>{message.booking_ref}</span>
+              <span>·</span>
+              <span>{message.property_id}</span>
+              <span>·</span>
+              <ChannelIcon source={message.source} className="opacity-80" />
             </div>
-            <QueryTypeBadge type={message.query_type} />
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-xs text-warm/40 font-medium mb-2">
-            {formatRelativeTime(message.timestamp)}
-          </p>
-          <ActionBadge action={message.status} />
-        </div>
+        <span className="text-[10px] text-warm-muted font-bold uppercase tracking-widest">
+          {timeAgo(message.timestamp)}
+        </span>
       </div>
 
-      <p className="text-sm text-warm/70 leading-relaxed italic mb-4">
-        "{truncateText(message.content, 120)}"
+      {/* Preview */}
+      <p className="text-sm text-warm/70 mb-4 line-clamp-2 italic leading-relaxed">
+        "{truncate(message.message_text, 120)}"
       </p>
 
-      <div className="flex items-center gap-4">
-        <div className="flex-1">
-          <div className="flex justify-between items-center mb-1.5">
-            <span className="text-[10px] text-warm/40 uppercase tracking-widest font-bold">Confidence Score</span>
-            <span className="text-[10px] text-warm/60 font-bold">{Math.round(message.confidence_score * 100)}%</span>
-          </div>
-          <div className="h-1 w-full bg-warm/5 rounded-full overflow-hidden">
-            <motion.div 
-              initial={{ width: 0 }}
-              animate={{ width: `${message.confidence_score * 100}%` }}
-              transition={{ duration: 1, ease: "easeOut" }}
-              className={`h-full ${getConfidenceColor(message.confidence_score)}`}
-            />
+      {/* Footer */}
+      <div className="flex justify-between items-end">
+        <div className="flex flex-col gap-2">
+          <QueryTypeBadge type={message.query_type} />
+          
+          {/* Confidence Bar */}
+          <div className="flex items-center gap-2">
+            <div className="w-20 h-1 bg-navy rounded-full overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${message.confidence_score * 100}%` }}
+                className="h-full"
+                style={{ backgroundColor: scoreColor }}
+              />
+            </div>
+            <span className="text-[9px] font-bold" style={{ color: scoreColor }}>
+              {(message.confidence_score).toFixed(2)}
+            </span>
           </div>
         </div>
+
+        <ActionBadge action={message.action} />
       </div>
     </motion.div>
   );

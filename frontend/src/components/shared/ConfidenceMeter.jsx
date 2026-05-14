@@ -1,31 +1,25 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { getScoreColor } from '../../utils/formatters';
 
-const ConfidenceMeter = ({ score = 0, size = 60, strokeWidth = 5 }) => {
-  const percentage = Math.round(score * 100);
+const ConfidenceMeter = ({ score, size = 48, strokeWidth = 4, showLabel = true }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (score * circumference);
-
-  const getColor = (s) => {
-    if (s >= 0.85) return '#4CAF82'; // success
-    if (s >= 0.6) return '#E8A838'; // warning
-    return '#E05555'; // danger
-  };
-
-  const color = getColor(score);
+  const color = getScoreColor(score);
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="transform -rotate-90">
         {/* Background Circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="rgba(240, 235, 227, 0.1)"
+          stroke="currentColor"
           strokeWidth={strokeWidth}
           fill="transparent"
+          className="text-navy-surface"
         />
         {/* Progress Circle */}
         <motion.circle
@@ -42,9 +36,11 @@ const ConfidenceMeter = ({ score = 0, size = 60, strokeWidth = 5 }) => {
           strokeLinecap="round"
         />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-xs font-bold text-warm">{percentage}%</span>
-      </div>
+      {showLabel && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+          <span className="text-[10px] font-bold" style={{ color }}>{Math.round(score * 100)}%</span>
+        </div>
+      )}
     </div>
   );
 };

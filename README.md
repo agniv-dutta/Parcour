@@ -81,11 +81,29 @@ List messages
 curl http://localhost:8000/api/v1/messages
 ```
 
+The response is a flat array of joined message records with these fields: `id`, `source`, `guest_name`, `message_text`, `query_type`, `confidence_score`, `action`, `drafted_reply`, `booking_ref`, `property_id`, `timestamp`, and `processing_time_ms`.
+
 Get message
 
 ```bash
 curl http://localhost:8000/api/v1/messages/<message_id>
 ```
+
+Seed Sample Data
+----------------
+To load the four demo messages used in local testing, run:
+
+```powershell
+cd backend
+python app/seed.py
+```
+
+This seeds Rahul, Priya, Arjun, and Kavya into the SQLite database used by the app.
+
+Notes
+-----
+- The app now allows `http://localhost:5173` in CORS so the Vite frontend can call the API directly.
+- The health endpoint returns `status`, `model`, `db`, `message_count`, and `env`.
 
 Confidence Scoring Logic
 ------------------------

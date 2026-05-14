@@ -2,22 +2,27 @@ import React from 'react';
 
 const SkeletonCard = () => {
   return (
-    <div className="w-full p-6 bg-navy-surface/30 border border-warm/5 rounded-lg animate-pulse mb-4">
+    <div className="bg-navy-surface border border-warm/10 rounded-xl p-4 animate-pulse">
       <div className="flex justify-between items-start mb-4">
-        <div className="flex gap-4">
-          <div className="w-12 h-12 bg-warm/10 rounded-full" />
-          <div>
-            <div className="w-32 h-4 bg-warm/10 rounded mb-2" />
-            <div className="w-20 h-3 bg-warm/10 rounded" />
+        <div className="flex gap-3">
+          <div className="w-10 h-10 rounded-full bg-navy" />
+          <div className="space-y-2">
+            <div className="h-4 w-32 bg-navy rounded" />
+            <div className="h-3 w-48 bg-navy rounded" />
           </div>
         </div>
-        <div className="w-16 h-4 bg-warm/10 rounded" />
+        <div className="h-3 w-12 bg-navy rounded" />
       </div>
-      <div className="w-full h-4 bg-warm/10 rounded mb-2" />
-      <div className="w-3/4 h-4 bg-warm/10 rounded mb-4" />
-      <div className="flex justify-between items-center">
-        <div className="w-24 h-6 bg-warm/10 rounded-full" />
-        <div className="w-20 h-6 bg-warm/10 rounded-full" />
+      <div className="space-y-2 mb-4">
+        <div className="h-3 w-full bg-navy rounded" />
+        <div className="h-3 w-2/3 bg-navy rounded" />
+      </div>
+      <div className="flex justify-between items-end">
+        <div className="flex gap-2">
+          <div className="h-5 w-20 bg-navy rounded-full" />
+          <div className="h-2 w-16 bg-navy rounded self-center" />
+        </div>
+        <div className="h-6 w-24 bg-navy rounded" />
       </div>
     </div>
   );

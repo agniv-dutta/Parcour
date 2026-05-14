@@ -1,58 +1,96 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { useMessages } from '../hooks/useMessages';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { getMessages } from '../api/client';
 import MessageFeed from '../components/messages/MessageFeed';
-import { Filter } from 'lucide-react';
+import MessageDetail from '../components/messages/MessageDetail';
+import Topbar from '../components/layout/Topbar';
+import Sidebar from '../components/layout/Sidebar';
+import TestWebhookPanel from '../components/messages/TestWebhookPanel';
 
 const MessagesPage = () => {
-  const [filter, setFilter] = useState('All');
-  const { data: messages, isLoading, isError } = useMessages();
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState(null);
+  const [filter, setFilter] = useState('all');
+  const [isTestPanelOpen, setIsTestPanelOpen] = useState(false);
 
-  const filters = ['All Messages', 'Auto-sent', 'Needs Review', 'Escalated', 'Complaints'];
+  const fetchMessages = async () => {
+    setLoading(true);
+    const data = await getMessages();
+    setMessages(data);
+    setLoading(false);
+    if (data.length > 0 && !selectedId) {
+      setSelectedId(data[0].id);
+    }
+  };
 
-  const pageVariants = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -20 }
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+
+  const filteredMessages = messages.filter(msg => {
+    if (filter === 'all') return true;
+    if (filter === 'auto_sent') return msg.action === 'auto_send';
+    if (filter === 'needs_review') return msg.action === 'agent_review';
+    if (filter === 'escalated') return msg.action === 'escalate';
+    if (filter === 'complaints') return msg.query_type === 'complaint';
+    return true;
+  });
+
+  const activeMessage = messages.find(m => m.id === selectedId);
+
+  const handleSend = (text) => {
+    console.log('Sending reply:', text);
+    // In a real app, this would call an API
+    alert('Reply sent successfully!');
+  };
+
+  const handleEscalate = () => {
+    if (window.confirm('Are you sure you want to escalate this to a human manager?')) {
+      alert('Message escalated.');
+    }
   };
 
   return (
-    <motion.div 
-      variants={pageVariants}
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      className="p-8 max-w-7xl mx-auto"
-    >
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center gap-4">
-          {filters.map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`
-                px-6 py-2 rounded-lg text-sm font-semibold transition-all border
-                ${filter === f 
-                  ? 'bg-gold text-navy border-gold shadow-lg shadow-gold/20' 
-                  : 'bg-navy-surface/30 text-warm/60 border-warm/10 hover:border-warm/30 hover:text-warm'}
-              `}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-navy-surface/50 border border-warm/10 rounded-lg text-warm/60 hover:text-warm transition-colors">
-          <Filter size={18} />
-          <span className="text-sm font-medium">Advanced Filters</span>
-        </button>
+    <div className="flex h-screen bg-navy overflow-hidden">
+      <Sidebar messageCount={messages.length} />
+      
+      <div className="flex-1 flex flex-col min-w-0">
+        <Topbar onToggleTestPanel={() => setIsTestPanelOpen(true)} />
+        
+        <main className="flex-1 flex overflow-hidden p-8 gap-8">
+          {/* Feed Section (40%) */}
+          <div className="w-[400px] flex-shrink-0 flex flex-col overflow-hidden">
+            <MessageFeed 
+              messages={filteredMessages} 
+              loading={loading}
+              activeId={selectedId}
+              onSelect={(msg) => setSelectedId(msg.id)}
+              activeFilter={filter}
+              onFilterChange={setFilter}
+            />
+          </div>
+
+          {/* Detail Section (60%) */}
+          <div className="flex-1 bg-navy/20 rounded-2xl border border-warm/5 p-8 overflow-hidden">
+            <AnimatePresence mode="wait">
+              <MessageDetail 
+                key={selectedId}
+                message={activeMessage} 
+                onSend={handleSend}
+                onEscalate={handleEscalate}
+              />
+            </AnimatePresence>
+          </div>
+        </main>
       </div>
 
-      <MessageFeed 
-        messages={messages} 
-        isLoading={isLoading} 
-        isError={isError} 
+      <TestWebhookPanel 
+        isOpen={isTestPanelOpen} 
+        onClose={() => setIsTestPanelOpen(false)}
+        onRefresh={fetchMessages}
       />
-    </motion.div>
+    </div>
   );
 };
 
