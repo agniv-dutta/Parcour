@@ -102,9 +102,13 @@ const Sidebar = ({ messageCount = 0 }) => {
           "p-6 flex items-center gap-3 overflow-hidden",
           collapsed && "justify-center p-4"
         )}>
-          <div className="w-8 h-8 rounded-full bg-gold flex items-center justify-center text-navy font-playfair font-bold text-xl flex-shrink-0">
-            N
-          </div>
+          <img
+            src="/brand/parcour-monogram-navy-gold.svg"
+            alt="Parcour monogram"
+            className="w-8 h-8 rounded-full object-contain flex-shrink-0"
+            loading="eager"
+            decoding="async"
+          />
           <AnimatePresence>
             {!collapsed && (
               <motion.div 

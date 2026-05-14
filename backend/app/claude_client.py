@@ -1,6 +1,8 @@
 """Wrapper around Anthropic (Claude) API calls for drafting replies and classification."""
 from __future__ import annotations
 
+import asyncio
+import inspect
 from typing import Optional
 import logging
 from .config import settings
@@ -49,6 +51,108 @@ class ClaudeClient:
                 logger.exception("Failed to instantiate Anthropic client: %s", exc)
                 raise ClaudeAPIError(str(exc))
 
+    async def _call_sdk_method(self, method, **kwargs):
+        """Call Anthropic SDK methods safely across sync/async variants."""
+        if inspect.iscoroutinefunction(method):
+            return await method(**kwargs)
+        return await asyncio.to_thread(method, **kwargs)
+
+    @staticmethod
+    def _extract_text(response) -> str:
+        """Extract plain text from Claude response shapes used by SDK versions."""
+        # Modern messages API: response.content is a list of typed blocks.
+        content = getattr(response, "content", None)
+        if isinstance(content, list):
+            parts = []
+            for block in content:
+                text = getattr(block, "text", None)
+                if text:
+                    parts.append(text)
+                elif isinstance(block, dict) and block.get("text"):
+                    parts.append(str(block["text"]))
+            if parts:
+                return "\n".join(parts).strip()
+
+        # Older completions APIs.
+        text = getattr(response, "completion", None) or getattr(response, "text", None)
+        if text:
+            return str(text).strip()
+
+        choices = getattr(response, "choices", None)
+        if choices:
+            first = choices[0]
+            choice_text = getattr(first, "text", None)
+            if choice_text:
+                return str(choice_text).strip()
+            if isinstance(first, dict) and first.get("text"):
+                return str(first["text"]).strip()
+
+        if isinstance(response, dict):
+            if response.get("completion"):
+                return str(response["completion"]).strip()
+            if response.get("text"):
+                return str(response["text"]).strip()
+            if response.get("choices"):
+                first = response["choices"][0]
+                if isinstance(first, dict) and first.get("text"):
+                    return str(first["text"]).strip()
+
+        raise ClaudeAPIError("Claude response did not contain text content")
+
+    async def _complete(self, system_prompt: str, user_prompt: str, max_tokens: int) -> str:
+        """Generate text using Claude, preferring messages API with a legacy fallback."""
+        if not _HAS_ANTHROPIC:
+            raise ClaudeAPIError("anthropic SDK is not installed")
+        if not self.client:
+            raise ClaudeAPIError("ANTHROPIC_API_KEY is not configured")
+
+        # Preferred path for current Anthropic models/SDK.
+        if hasattr(self.client, "messages") and hasattr(self.client.messages, "create"):
+            try:
+                response = await self._call_sdk_method(
+                    self.client.messages.create,
+                    model=self.model,
+                    max_tokens=max_tokens,
+                    system=system_prompt,
+                    messages=[{"role": "user", "content": user_prompt}],
+                )
+                return self._extract_text(response)
+            except Exception as exc:
+                logger.warning("Claude messages.create failed, attempting legacy fallback: %s", exc)
+
+        # Legacy fallback for older clients.
+        prompt = f"{system_prompt}\n\nHuman: {user_prompt}\n\nAssistant:"
+        try:
+            if hasattr(self.client, "completions") and hasattr(self.client.completions, "create"):
+                response = await self._call_sdk_method(
+                    self.client.completions.create,
+                    model=self.model,
+                    prompt=prompt,
+                    max_tokens=max_tokens,
+                )
+                return self._extract_text(response)
+            if hasattr(self.client, "create_completion"):
+                response = await self._call_sdk_method(
+                    self.client.create_completion,
+                    model=self.model,
+                    prompt=prompt,
+                    max_tokens=max_tokens,
+                )
+                return self._extract_text(response)
+            if hasattr(self.client, "create"):
+                response = await self._call_sdk_method(
+                    self.client.create,
+                    prompt=prompt,
+                    model=self.model,
+                    max_tokens=max_tokens,
+                )
+                return self._extract_text(response)
+        except Exception as exc:
+            logger.exception("Claude completion error: %s", exc)
+            raise ClaudeAPIError(str(exc))
+
+        raise ClaudeAPIError("No compatible Anthropic completion method found")
+
     async def draft_reply(self, guest_name: str, message_text: str, query_type: str, booking_ref: str, property_id: str) -> str:
         """Draft a reply using Claude.
 
@@ -57,32 +161,11 @@ class ClaudeClient:
         system_prompt = self._system_prompt()
         user_prompt = f"QueryType: {query_type}\nBookingRef: {booking_ref}\nGuestName: {guest_name}\nMessage: {message_text}\n"
 
-        prompt = system_prompt + "\n\n" + user_prompt
-
-        if not _HAS_ANTHROPIC:
-            raise ClaudeAPIError("anthropic SDK is not installed")
-        if not self.client:
-            raise ClaudeAPIError("ANTHROPIC_API_KEY is not configured")
-
         try:
-            # Use the SDK's completions interface; adapt to available surface.
-            if hasattr(self.client, "completions"):
-                # modern client
-                resp = await self.client.completions.create(model=self.model, prompt=prompt, max_tokens=500)
-                # some SDKs return an object with 'completion' or 'text'
-                text = getattr(resp, "completion", None) or getattr(resp, "text", None) or resp.choices[0].text
-            elif hasattr(self.client, "create_completion"):
-                resp = await self.client.create_completion(model=self.model, prompt=prompt, max_tokens=500)
-                text = resp.choices[0].text
-            else:
-                # try synchronous fallback (unlikely in async server)
-                resp = self.client.create(prompt=prompt, model=self.model, max_tokens=500)
-                text = resp.get("completion") or resp.get("text") or resp["choices"][0]["text"]
+            return await self._complete(system_prompt=system_prompt, user_prompt=user_prompt, max_tokens=500)
         except Exception as exc:
             logger.exception("Claude API error: %s", exc)
             raise ClaudeAPIError(str(exc))
-
-        return text.strip()
 
     async def classify_text(self, message: str) -> str:
         """Call Claude to classify a message into a single category label."""
@@ -93,53 +176,19 @@ class ClaudeClient:
             f'Message: "{message}"'
         )
 
-        if not _HAS_ANTHROPIC:
-            raise ClaudeAPIError("anthropic SDK is not installed")
-        if not self.client:
-            raise ClaudeAPIError("ANTHROPIC_API_KEY is not configured")
-
         try:
-            if hasattr(self.client, "completions"):
-                resp = await self.client.completions.create(model=self.model, prompt=prompt, max_tokens=50)
-                text = getattr(resp, "completion", None) or getattr(resp, "text", None) or resp.choices[0].text
-            elif hasattr(self.client, "create_completion"):
-                resp = await self.client.create_completion(model=self.model, prompt=prompt, max_tokens=50)
-                text = resp.choices[0].text
-            else:
-                resp = self.client.create(prompt=prompt, model=self.model, max_tokens=50)
-                text = resp.get("completion") or resp.get("text") or resp["choices"][0]["text"]
+            return await self._complete(system_prompt="You are a strict classifier.", user_prompt=prompt, max_tokens=50)
         except Exception as exc:
             logger.exception("Claude classification error: %s", exc)
             raise ClaudeAPIError(str(exc))
 
-        return text.strip()
-
     async def get_custom_completion(self, system_prompt: str, user_prompt: str, max_tokens: int = 1000) -> str:
         """Generic method to get a completion from Claude with custom prompts."""
-        if not _HAS_ANTHROPIC:
-            raise ClaudeAPIError("anthropic SDK is not installed")
-        if not self.client:
-            raise ClaudeAPIError("ANTHROPIC_API_KEY is not configured")
-
-        # Combine for older prompt-based completions if needed, 
-        # but modern SDKs support system/messages.
-        prompt = f"{system_prompt}\n\nHuman: {user_prompt}\n\nAssistant:"
-
         try:
-            if hasattr(self.client, "completions"):
-                resp = await self.client.completions.create(model=self.model, prompt=prompt, max_tokens=max_tokens)
-                text = getattr(resp, "completion", None) or getattr(resp, "text", None) or resp.choices[0].text
-            elif hasattr(self.client, "create_completion"):
-                resp = await self.client.create_completion(model=self.model, prompt=prompt, max_tokens=max_tokens)
-                text = resp.choices[0].text
-            else:
-                resp = self.client.create(prompt=prompt, model=self.model, max_tokens=max_tokens)
-                text = resp.get("completion") or resp.get("text") or resp["choices"][0]["text"]
+            return await self._complete(system_prompt=system_prompt, user_prompt=user_prompt, max_tokens=max_tokens)
         except Exception as exc:
             logger.exception("Claude completion error: %s", exc)
             raise ClaudeAPIError(str(exc))
-
-        return text.strip()
 
     def _system_prompt(self) -> str:
         PROPERTY_CONTEXT = """

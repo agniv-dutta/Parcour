@@ -116,7 +116,7 @@ const AnalyticsPage = () => {
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar title="Analytics" />
         
-        <main className="flex-1 overflow-y-auto p-8 no-scrollbar">
+        <main className="flex-1 overflow-y-auto app-scrollbar p-8">
           <div className="max-w-7xl mx-auto space-y-8 pb-20">
             
             {/* Header Section */}

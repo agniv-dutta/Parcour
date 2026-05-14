@@ -52,7 +52,7 @@ const ReplyPanel = ({ draft, processingTime, onSend, onEscalate }) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-navy/30 rounded-xl border border-warm/10 p-6 overflow-y-auto no-scrollbar">
+    <div className="flex flex-col h-full bg-navy/30 rounded-xl border border-warm/10 p-6 overflow-y-auto app-scrollbar">
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-[#9B7FD4] animate-pulse" />

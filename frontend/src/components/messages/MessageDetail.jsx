@@ -25,7 +25,7 @@ const MessageDetail = ({ message, onSend, onEscalate }) => {
       className="h-full grid grid-cols-1 lg:grid-cols-2 gap-8"
     >
       {/* Left: Original Message */}
-      <div className="flex flex-col gap-6 overflow-y-auto no-scrollbar pr-2">
+      <div className="flex flex-col gap-6 overflow-y-auto app-scrollbar pr-2">
         <div>
           <h2 className="text-gold font-playfair text-2xl mb-6">Original Message</h2>
           

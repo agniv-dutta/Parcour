@@ -75,7 +75,7 @@ const SettingsPage = () => {
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar title="Settings" />
         
-        <main className="flex-1 overflow-y-auto p-8 no-scrollbar">
+        <main className="flex-1 overflow-y-auto app-scrollbar p-8">
           <div className="max-w-4xl mx-auto space-y-10 pb-20">
             <div className="mb-2">
               <h2 className="text-warm font-playfair text-3xl mb-1">System Settings</h2>

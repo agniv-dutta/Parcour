@@ -51,19 +51,72 @@
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 11px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-navy;
+  @apply bg-navy-surface;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-warm/20 rounded-full;
+  @apply bg-gold/40 rounded-full border-2 border-navy-surface;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-warm/30;
+  @apply bg-gold/60;
+  box-shadow: 0 0 8px rgba(201, 169, 110, 0.35);
+}
+
+/* Page/tab scrollbar utility for explicit opt-in in scroll containers */
+.app-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 169, 110, 0.55) #162032;
+  scrollbar-gutter: stable;
+}
+
+.app-scrollbar::-webkit-scrollbar {
+  width: 11px;
+}
+
+.app-scrollbar::-webkit-scrollbar-track {
+  background: #162032;
+}
+
+.app-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(201, 169, 110, 0.55);
+  border-radius: 9999px;
+  border: 2px solid #162032;
+}
+
+.app-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 169, 110, 0.75);
+  box-shadow: 0 0 8px rgba(201, 169, 110, 0.35);
+}
+
+/* Backward compatible alias used in MessageDetailPage */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 169, 110, 0.55) #162032;
+  scrollbar-gutter: stable;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 11px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #162032;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(201, 169, 110, 0.55);
+  border-radius: 9999px;
+  border: 2px solid #162032;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 169, 110, 0.75);
+  box-shadow: 0 0 8px rgba(201, 169, 110, 0.35);
 }
 
 /* Animations */

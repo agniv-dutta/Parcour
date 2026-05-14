@@ -158,7 +158,7 @@ const MessageFeed = ({ messages, loading, activeId, onSelect, activeFilter, onFi
       </div>
 
       {/* Messages List */}
-      <div className="flex-1 overflow-y-auto no-scrollbar pr-2 pb-8">
+      <div className="flex-1 overflow-y-auto app-scrollbar pr-2 pb-8">
         <div className="space-y-4">
           {loading ? (
             Array(4).fill(0).map((_, i) => <SkeletonCard key={i} />)

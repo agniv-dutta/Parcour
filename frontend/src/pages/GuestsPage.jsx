@@ -43,7 +43,7 @@ const GuestsPage = () => {
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar title="Guests" />
         
-        <main className="flex-1 overflow-y-auto p-8 no-scrollbar">
+        <main className="flex-1 overflow-y-auto app-scrollbar p-8">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
               <div>

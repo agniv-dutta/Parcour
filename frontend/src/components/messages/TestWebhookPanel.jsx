@@ -58,7 +58,7 @@ const TestWebhookPanel = ({ isOpen, onClose, onRefresh }) => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 space-y-6 overflow-y-auto no-scrollbar pb-8">
+            <form onSubmit={handleSubmit} className="flex-1 space-y-6 overflow-y-auto app-scrollbar pb-8">
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-warm-muted uppercase tracking-widest">Source Channel</label>
                 <select 

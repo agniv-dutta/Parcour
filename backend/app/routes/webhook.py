@@ -19,6 +19,42 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _fallback_drafted_reply(guest_name: str, query_type: str) -> str:
+    """Generate a safe deterministic reply when Claude is unavailable."""
+    name = (guest_name or "there").split()[0]
+    templates = {
+        "complaint": (
+            f"Hi {name}, I am really sorry for the inconvenience and I understand your concern. "
+            "I have flagged this with our on-ground team right away and they will address it as a priority. "
+            "We will share a clear update shortly."
+        ),
+        "post_sales_checkin": (
+            f"Hi {name}, thanks for your message. "
+            "Our team has noted your check-in related request and will confirm the exact details shortly. "
+            "If you are arriving soon, we will prioritize this immediately."
+        ),
+        "pre_sales_pricing": (
+            f"Hi {name}, thanks for your interest. "
+            "Our reservations team will confirm the best available pricing and inclusions for your dates shortly. "
+            "We look forward to hosting you."
+        ),
+        "pre_sales_availability": (
+            f"Hi {name}, thanks for checking with us. "
+            "Our team will confirm availability for your requested dates shortly and share the next steps to book. "
+            "Happy to help with any preferences as well."
+        ),
+        "special_request": (
+            f"Hi {name}, thank you for sharing your request. "
+            "Our team is reviewing feasibility and will confirm options shortly. "
+            "We will do our best to accommodate you."
+        ),
+    }
+    return templates.get(
+        query_type,
+        f"Hi {name}, thank you for your message. Our team has received your request and will confirm the details shortly.",
+    )
+
+
 @router.post("/webhook/message", response_model=MessageResponse, tags=["webhook"])
 async def handle_webhook(payload: WebhookPayload, db: AsyncSession = Depends(get_db)) -> Any:
     """Process an incoming guest message webhook.
@@ -65,12 +101,20 @@ async def handle_webhook(payload: WebhookPayload, db: AsyncSession = Depends(get
             db.add(conv)
             await db.flush()
 
-        # 5. Call Claude to draft reply
+        # 5. Call Claude to draft reply; if unavailable, return deterministic fallback.
+        ai_drafted = True
         try:
-            drafted = await claude_client.draft_reply(guest_name=payload.guest_name, message_text=payload.message, query_type=query_type, booking_ref=payload.booking_ref, property_id=payload.property_id)
+            drafted = await claude_client.draft_reply(
+                guest_name=payload.guest_name,
+                message_text=payload.message,
+                query_type=query_type,
+                booking_ref=payload.booking_ref,
+                property_id=payload.property_id,
+            )
         except ClaudeAPIError as exc:
-            logger.exception("Claude failed: %s", exc)
-            raise HTTPException(status_code=503, detail=f"Claude API error: {exc}")
+            logger.warning("Claude unavailable in webhook flow, using fallback reply: %s", exc)
+            drafted = _fallback_drafted_reply(payload.guest_name, query_type)
+            ai_drafted = False
 
         # 6. Calculate confidence
         message_word_count = len(payload.message.split())
@@ -88,7 +132,7 @@ async def handle_webhook(payload: WebhookPayload, db: AsyncSession = Depends(get
             confidence_score=score,
             drafted_reply=drafted,
             action=action,
-            ai_drafted=True,
+            ai_drafted=ai_drafted,
             agent_edited=False,
             auto_sent=(action == "auto_send"),
             timestamp=payload.timestamp,
